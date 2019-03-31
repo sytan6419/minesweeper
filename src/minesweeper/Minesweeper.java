@@ -366,8 +366,37 @@ public class Minesweeper {
 
         reduceMine();
         printGameMap(); /* 999 is confirm lan7 bomb, 100 is the safe flag that we need to remove */
+        if (getResult())
+        {
+            System.out.println("You win!");
+        }
+        else
+        {
+            System.out.println("You lose!");
+        };
     }
     
+    /* Validate the gamemap result see if we tag correctly? */
+    public boolean getResult()
+    {
+        boolean flag = false;
+        for (int i=0;i<gameMap.length;i++)
+        {
+            for(int j=0;j<gameMap.length;j++)
+            {
+                if (gameMap[i][j] == 999)
+                {
+                    /* Hi, i am bomb */
+                    flag = tagMine(i,j);
+                    if (!flag)
+                    {
+                        return flag;
+                    }
+                }
+            }
+        }
+        return flag;
+    }
     /* Random num generator */
     public int getRandomNumber()
     {
@@ -376,7 +405,7 @@ public class Minesweeper {
     }
     
     /* Based on the tagMine, try to solve the array by checking potential mine only */
-    public boolean reduceMine()
+    public void reduceMine()
     {
         for (int i=0;i<mineMap.length;i++)
         {
@@ -386,16 +415,14 @@ public class Minesweeper {
                 {
                     int newMineX = i - 1;
                     int newMineY = j - 1;
-
+                    boolean flag = true;
                     while (true)
                     {
                         // if the mine is potential mine, just set it to 999
                         if (gameMap[newMineX][newMineY] == -1)
                         {
-                            gameMap[newMineX][newMineY] = 999;
-                            tagMine(newMineX,newMineY); //tag mine to be correct
-                            checkPotentialFlag(newMineX,newMineY);
-                            //printGameMap();
+                            gameMap[newMineX][newMineY] = 999; //set bomb to 999 easier for tracking later
+                            checkPotentialFlag(newMineX,newMineY); //just check the neighbourhood.
                             break;
                         }
                         
@@ -423,17 +450,17 @@ public class Minesweeper {
                         }
                         else
                         {
+                            // end of loop, just end it
                             break;
                         }
-
                     }
                 }
             }
         }
-        return true;
     }
+
     // since we found a bomb, we decide to reset the flag by checking the area
-    public boolean checkPotentialFlag(int x, int y)
+    public void checkPotentialFlag(int x, int y)
     {
         for (int i=x-1;i<=x+1;i++)
         {
@@ -441,8 +468,8 @@ public class Minesweeper {
             {
                 if (gameMap[i][j] == -1)
                 {
+                    // confirm that the flag is not bomb, set to 100
                     gameMap[i][j] = 100;
-                    return true;
                 }
                 else
                 {
@@ -450,7 +477,6 @@ public class Minesweeper {
                 }
             }
         }
-        return false;
     }
     /**
      * Tag a mine
