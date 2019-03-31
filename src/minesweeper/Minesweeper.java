@@ -364,7 +364,7 @@ public class Minesweeper {
         openSquare(getRandomNumber(), getRandomNumber(), gameMap);
         printGameMap();
 
-        reduceMine(1,1);
+        reduceMine();
         printGameMap(); /* 999 is confirm lan7 bomb, 100 is the safe flag that we need to remove */
     }
     
@@ -376,7 +376,7 @@ public class Minesweeper {
     }
     
     /* Based on the tagMine, try to solve the array by checking potential mine only */
-    public boolean reduceMine(int x, int y)
+    public boolean reduceMine()
     {
         for (int i=0;i<mineMap.length;i++)
         {
@@ -386,6 +386,7 @@ public class Minesweeper {
                 {
                     int newMineX = i - 1;
                     int newMineY = j - 1;
+
                     while (true)
                     {
                         // if the mine is potential mine, just set it to 999
@@ -404,8 +405,11 @@ public class Minesweeper {
                             checkPotentialFlag(newMineX,newMineY);
                         }
 
-                        if (newMineX < 3 && newMineY < 3)
+                        // this part does the shifting for row and check if we done checking neighbour
+                        if (newMineX <= i+1 && newMineY <= j+1)
                         {
+                            // if we done checking row, then advance to next row
+                            // start from column 0
                             if (newMineX == j+1)
                             {
                                 newMineY += 1;
@@ -413,6 +417,7 @@ public class Minesweeper {
                             }
                             else
                             {
+                                // just keep checking to right handside
                                 newMineX++;
                             }
                         }
