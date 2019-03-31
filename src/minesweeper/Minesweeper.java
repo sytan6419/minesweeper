@@ -415,23 +415,27 @@ public class Minesweeper {
                 {
                     int newMineX = i - 1;
                     int newMineY = j - 1;
-                    boolean flag = true;
+                    int bomb = gameMap[i][j];
                     while (true)
                     {
+                        if (newMineX < 0 || newMineY < 0)
+                            break;
+                        if (newMineX >= gameMap.length || newMineY >= gameMap.length)
+                            break;
+
                         // if the mine is potential mine, just set it to 9
                         if (gameMap[newMineX][newMineY] == -1)
                         {
-                            gameMap[newMineX][newMineY] = MINE; //set bomb to 9 easier for tracking later
-                            checkPotentialFlag(newMineX,newMineY); //just check the neighbourhood.
-                            break;
+                            //gameMap[newMineX][newMineY] = MINE; //set bomb to 9 easier for tracking later
+                            checkPotentialFlag(newMineX,newMineY, bomb); //just check the neighbourhood.
                         }
                         
                         // when a bomb located, just check again to clear the safe flag
                         if (gameMap[newMineX][newMineY] == MINE)
                         {
-                            checkPotentialFlag(newMineX,newMineY);
+                            checkPotentialFlag(newMineX,newMineY, bomb);
                         }
-
+                        
                         // this part does the shifting for row and check if we done checking neighbour
                         if (newMineX <= i+1 && newMineY <= j+1)
                         {
@@ -460,20 +464,49 @@ public class Minesweeper {
     }
 
     // since we found a bomb, we decide to reset the flag by checking the area
-    public void checkPotentialFlag(int x, int y)
+    public void checkPotentialFlag(int x, int y, int bomb)
     {
+        int count = 0;
+        boolean setfalse = false;
+        
         for (int i=x-1;i<=x+1;i++)
         {
             for (int j=y-1;j<=y+1;j++)
             {
+                if (gameMap[i][j] == 9)
+                {
+                    count += 1;
+                }
+            }
+        }
+        
+        //Check if the bomb count is correct
+        if (count <= bomb)
+        {
+            setfalse = true;
+        }
+
+        for (int i=x-1;i<=x+1;i++)
+        {
+            for (int j=y-1;j<=y+1;j++)
+            {   
                 if (gameMap[i][j] == -1)
                 {
-                    // confirm that the flag is not bomb, set to 100
-                    gameMap[i][j] = 100;
+                    if (!setfalse)
+                    {
+                        System.out.println("Set bomb");
+                        gameMap[i][j] = MINE;
+                        count += 1;
+                        printGameMap();
+                    }
+                    else
+                    {
+                        gameMap[i][j] = mineMap[i][j];
+                    }
                 }
                 else
                 {
-                    //continue doing nothing
+                    //do nothing
                 }
             }
         }
@@ -494,7 +527,7 @@ public class Minesweeper {
     			System.out.println("Number of mines: " + mineList.size());
     			return true;
     		} else {
-    			System.out.println("WRONG ANSWER!");
+    			System.out.println("WRONG ANSWER! @ " +j + " "+i);
     			return false;
     		}
     	
@@ -503,11 +536,11 @@ public class Minesweeper {
     public static void main(String[] args){
     	
     		//Generate a new map
-    		//Minesweeper m = new Minesweeper(5, 5, 0.2, "minemap.txt");
+    		Minesweeper m = new Minesweeper(6, 6, 0.2, "minemap.txt");
 
     		
     		//For testing, you may want to generate the map once, and save & load it again later 
-    		Minesweeper m = new Minesweeper("minemap.txt");
+    		//Minesweeper m = new Minesweeper("minemap.txt");
     		//m.printGameMap();
     		System.out.println("*************");
     		
