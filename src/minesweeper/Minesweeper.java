@@ -365,7 +365,7 @@ public class Minesweeper {
         printGameMap();
 
         reduceMine();
-        printGameMap(); /* 999 is confirm lan7 bomb, 100 is the safe flag that we need to remove */
+        printGameMap(); /* MINE is confirm lan7 bomb, 100 is the safe flag that we need to remove */
         if (getResult())
         {
             System.out.println("You win!");
@@ -384,7 +384,7 @@ public class Minesweeper {
         {
             for(int j=0;j<gameMap.length;j++)
             {
-                if (gameMap[i][j] == 999)
+                if (gameMap[i][j] == MINE)
                 {
                     /* Hi, i am bomb */
                     flag = tagMine(i,j);
@@ -418,16 +418,16 @@ public class Minesweeper {
                     boolean flag = true;
                     while (true)
                     {
-                        // if the mine is potential mine, just set it to 999
+                        // if the mine is potential mine, just set it to 9
                         if (gameMap[newMineX][newMineY] == -1)
                         {
-                            gameMap[newMineX][newMineY] = 999; //set bomb to 999 easier for tracking later
+                            gameMap[newMineX][newMineY] = MINE; //set bomb to 9 easier for tracking later
                             checkPotentialFlag(newMineX,newMineY); //just check the neighbourhood.
                             break;
                         }
                         
                         // when a bomb located, just check again to clear the safe flag
-                        if (gameMap[newMineX][newMineY] == 999)
+                        if (gameMap[newMineX][newMineY] == MINE)
                         {
                             checkPotentialFlag(newMineX,newMineY);
                         }
