@@ -359,13 +359,14 @@ public class Minesweeper {
     
     public void solution() 
     {
+        //printMineMap();
         /* Randomly open 1 map */
         Random rand = new Random();
         openSquare(getRandomNumber(), getRandomNumber(), gameMap);
         printGameMap();
 
         reduceMine();
-        printGameMap(); /* MINE is confirm lan7 bomb, 100 is the safe flag that we need to remove */
+        //printGameMap(); /* MINE is confirm lan7 bomb, 100 is the safe flag that we need to remove */
         if (getResult())
         {
             System.out.println("You win!");
@@ -374,6 +375,7 @@ public class Minesweeper {
         {
             System.out.println("You lose!");
         };
+        printGameMap();
     }
     
     /* Validate the gamemap result see if we tag correctly? */
@@ -390,6 +392,7 @@ public class Minesweeper {
                     flag = tagMine(i,j);
                     if (!flag)
                     {
+                        gameMap[i][j] = 1000;
                         return flag;
                     }
                 }
@@ -411,11 +414,11 @@ public class Minesweeper {
         {
             for (int j=0;j<mineMap.length;j++)
             {
-                if (gameMap[i][j] != 0)
+                if (gameMap[i][j] == -1)
                 {
-                    int newMineX = i - 1;
-                    int newMineY = j - 1;
-                    int bomb = gameMap[i][j];
+                    int newMineX = i-1;
+                    int newMineY = j-1;
+                    
                     while (true)
                     {
                         if (newMineX < 0 || newMineY < 0)
@@ -424,24 +427,47 @@ public class Minesweeper {
                             break;
 
                         // if the mine is potential mine, just set it to 9
+                        /*
                         if (gameMap[newMineX][newMineY] == -1)
                         {
                             //gameMap[newMineX][newMineY] = MINE; //set bomb to 9 easier for tracking later
                             checkPotentialFlag(newMineX,newMineY, bomb); //just check the neighbourhood.
                         }
-                        
-                        // when a bomb located, just check again to clear the safe flag
-                        if (gameMap[newMineX][newMineY] == MINE)
+                        */
+                        if (gameMap[newMineX][newMineY] == 0)
                         {
-                            checkPotentialFlag(newMineX,newMineY, bomb);
+                            // if the centre is 0, this is confirm not a bomb
+                            gameMap[i][j] = mineMap[i][j];
                         }
+                        else if(gameMap[newMineX][newMineY] != 0)
+                        {
+                            //check if any bomb discover
+                            if (gameMap[newMineX][newMineY] != 9)
+                            {
+                                checkPotentialMine(newMineX, newMineY, gameMap[newMineX][newMineY]);
+                            }
+                            else
+                            {
+                                //if (gameMap[newMineX+1][newMineY] != 9)
+                                //    checkPotentialMine(newMineX+1, newMineY, gameMap[newMineX+1][newMineY]);                                    
+                            }
+                        }
+                        else
+                        {
+                            //do nothing
+                        }
+                        // when a bomb located, just check again to clear the safe flag
+                        //if (gameMap[newMineX][newMineY] == MINE)
+                        //{
+                        //    checkPotentialFlag(newMineX,newMineY, bomb);
+                        //}
                         
                         // this part does the shifting for row and check if we done checking neighbour
                         if (newMineX <= i+1 && newMineY <= j+1)
                         {
                             // if we done checking row, then advance to next row
                             // start from column 0
-                            if (newMineX == j+1)
+                            if (newMineX == i+1)
                             {
                                 newMineY += 1;
                                 newMineX = i - 1;
@@ -458,6 +484,38 @@ public class Minesweeper {
                             break;
                         }
                     }
+                }
+            }
+        }
+    }
+
+    public void checkPotentialMine(int x, int y, int bomb)
+    {
+        int count = 0;
+
+        for (int i=x-1;i<=x+1;i++)
+        {
+            for (int j=y-1;j<=y+1;j++)
+            {
+                if (gameMap[i][j] == 9)
+                {
+                    count += 1;
+                }
+            }
+        }
+        
+        for (int i=x-1;i<=x;i++)
+        {
+            for (int j=y-1;j<=y;j++)
+            {
+                if (gameMap[i][j] == -1)
+                {
+                    if (count >= bomb)
+                        gameMap[i][j] = mineMap[i][j];
+                    else
+                        gameMap[i][j] = 9;
+                        count += 1;
+                        printGameMap();
                 }
             }
         }
@@ -481,7 +539,27 @@ public class Minesweeper {
         }
         
         //Check if the bomb count is correct
-        if (count <= bomb)
+        if (bomb != MINE)
+        {
+            if (count == bomb)
+            {
+                setfalse = true;
+            }
+            else if(count > bomb)
+            {
+                for (int i=x-1;i<=x+1;i++)
+                {
+                    for (int j=y-1;j<=y+1;j++)
+                    {
+                        if (gameMap[i][j] == 9)
+                        {
+                            gameMap[i][j] = -1;
+                        }
+                    }
+                }
+            }
+        }
+        else
         {
             setfalse = true;
         }
@@ -494,9 +572,19 @@ public class Minesweeper {
                 {
                     if (!setfalse)
                     {
-                        System.out.println("Set bomb");
+                        //System.out.println("Set bomb");
                         gameMap[i][j] = MINE;
                         count += 1;
+                        
+                        if (count == bomb)
+                        {
+                            setfalse = true;
+                        }
+                        else if(count > bomb)
+                        {
+                            // do nothing
+                            printGameMap();
+                        }
                         printGameMap();
                     }
                     else
@@ -511,6 +599,7 @@ public class Minesweeper {
             }
         }
     }
+    
     /**
      * Tag a mine
      * @param i i row
@@ -536,11 +625,10 @@ public class Minesweeper {
     public static void main(String[] args){
     	
     		//Generate a new map
-    		Minesweeper m = new Minesweeper(6, 6, 0.2, "minemap.txt");
-
+    		//Minesweeper m = new Minesweeper(15, 15, 0.2, "minemap.txt");
     		
     		//For testing, you may want to generate the map once, and save & load it again later 
-    		//Minesweeper m = new Minesweeper("minemap.txt");
+    		Minesweeper m = new Minesweeper("minemap.txt");
     		//m.printGameMap();
     		System.out.println("*************");
     		
