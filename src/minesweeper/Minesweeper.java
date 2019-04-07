@@ -58,7 +58,7 @@ public class Minesweeper {
 	private int[][] gameMap;
 	private TreeSet<String> mineList;
 	
-	
+	private static boolean debug = false;
 
 	
 	
@@ -74,15 +74,15 @@ public class Minesweeper {
 		mineMap = generateMineMap(m, n, p);
 		gameMap = createGameMap(mineMap);
 		mineList = getAllMineLocation(mineMap);
-		System.out.println("Total number of mines: " + mineList.size());
+		//System.out.println("Total number of mines: " + mineList.size());
 		
 		saveMineMap(mineMap, filename);
 		
 		
-		System.out.println("MINE MAP");
-		printMap(mineMap);
-		System.out.println("GAME MAP");
-		printMap(gameMap);
+		//System.out.println("MINE MAP");
+		//printMap(mineMap);
+		//System.out.println("GAME MAP");
+		//printMap(gameMap);
 	}
 	
 	
@@ -125,6 +125,7 @@ public class Minesweeper {
             for (int j = 1; j <= n; j++)
                 bombs[i][j] = (Math.random() < p);
 
+        /* sytan close this
         // print game
         for (int i = 1; i <= m; i++) {
             for (int j = 1; j <= n; j++)
@@ -132,7 +133,8 @@ public class Minesweeper {
                 else             System.out.print(". ");
             System.out.println();
         }
-
+        */
+        
         // sol[i][j] = # bombs adjacent to cell (i, j)
         int[][] sol = new int[m+2][n+2];
         for (int i = 0; i <= m+1; i++)
@@ -143,7 +145,7 @@ public class Minesweeper {
                         if (ii>=0 && jj>=0 && ii<m+2 && jj<n+2 && bombs[ii][jj]) sol[i][j]++;
 
         // print solution
-        System.out.println();
+        //System.out.println(); //sytan
         for (int i = 0; i <= m+1; i++) {
             for (int j = 0; j <= n+1; j++) {
                 if (bombs[i][j]){ 
@@ -154,7 +156,7 @@ public class Minesweeper {
                 	//System.out.print(sol[i][j] + " ");
                 }
             }
-            System.out.println();
+            //System.out.println(); //sytan
         }
         
         //printMap(mineMap);
@@ -256,9 +258,12 @@ public class Minesweeper {
     }
     
     public void printGameMap() {
+        if (!debug)
+        {
     		System.out.println("GAME MAP");
     		printMap(gameMap);
     		System.out.println();
+        }
     }
     
     public void printMineMap() {
@@ -357,7 +362,7 @@ public class Minesweeper {
 		return mineMap;
     }
     
-    public boolean solution() 
+    public boolean solution()
     {
         //printMineMap();
         /* Randomly open 1 box */
@@ -365,17 +370,20 @@ public class Minesweeper {
         openSquare(getRandomNumber(), getRandomNumber(), gameMap);
 
         reduceMine();
-        System.out.println("****** FINAL SOLUTION *******");
-        printGameMap();
+        //System.out.println("****** FINAL SOLUTION *******");
+        //printGameMap();
         
-        if (getResult())
+        if (getResult() && getMineLeft()==0)
         {
-            System.out.println("You win!");
+            //System.out.println("You win!");
             return true;
         }
         else
         {
-            System.out.println("You lose!");
+            //System.out.println("You lose!");
+            //debug purpose only;
+            printMineMap();
+            printGameMap();
             return false;
         }
         //printGameMap();
@@ -395,7 +403,7 @@ public class Minesweeper {
                     flag = tagMine(i,j);
                     if (!flag)
                     {
-                        // if solution is wrong,terminate and return false
+                        // if solution is wrong,label the wrong answer for debugging, terminate and return false
                         gameMap[i][j] = 1000;
                         return flag;
                     }
@@ -404,6 +412,7 @@ public class Minesweeper {
         }
         return flag;
     }
+
     /* Random num generator */
     public int getRandomNumber()
     {
@@ -426,15 +435,19 @@ public class Minesweeper {
                     
                     while (true)
                     {
+                        // start of boundary checking
                         if (newMineX < 0 || newMineY < 0)
                             break;
                         if (newMineX >= gameMap.length || newMineY >= gameMap.length)
                             break;
+                        // end of boundary checking
 
+                        // Logic start at here!
                         if (gameMap[newMineX][newMineY] == 0)
                         {
                             // if the centre is 0, this is confirm not a bomb
-                            gameMap[i][j] = mineMap[i][j];
+                            //gameMap[i][j] = mineMap[i][j];
+                            openSquare(i,j,gameMap);
                         }
                         else if(gameMap[newMineX][newMineY] != 0 && gameMap[newMineX][newMineY] != MINE)
                         {
@@ -443,7 +456,8 @@ public class Minesweeper {
                         }
                         
                         // this part does the shifting for row and check if we done checking neighbour
-                        if (newMineX <= i+1 && newMineY <= j+1)
+                        //if (newMineX <= i+1 && newMineY <= j+1)
+                        if (newMineX <= i+1 && newMineY <= j)
                         {
                             // if we done checking row, then advance to next row
                             // start from column 0
@@ -495,16 +509,27 @@ public class Minesweeper {
                 {
                     // if bomb ady found in square, just open it
                     if (count >= bomb)
-                        gameMap[i][j] = mineMap[i][j];
+                    {
+                        //gameMap[i][j] = mineMap[i][j];
+                        openSquare(i,j,gameMap);
+                        printGameMap();
+                    }
                     else
+                    {
                         gameMap[i][j] = MINE;
                         count += 1;
-                        //printGameMap(); //debug purpose only
+                        printGameMap(); //debug purpose only
+                    }
                 }
             }
         }
     }
 
+    /* return current minelist size */
+    public int getMineLeft()
+    {
+        return mineList.size();
+    }
     /**
      * Tag a mine
      * @param i i row
@@ -528,23 +553,27 @@ public class Minesweeper {
     }
     
     public static void main(String[] args){
-    	
+    	debug = true;
         int count_win = 0;
         for (int j=0;j<100;j++)
         {
             //Generate a new map
-            Minesweeper m = new Minesweeper(20, 20, 0.5, "minemap.txt");
+            Minesweeper m = new Minesweeper(10, 10, 0.5, "minemap.txt");
 
             //For testing, you may want to generate the map once, and save & load it again later 
             //Minesweeper m = new Minesweeper("minemap.txt");
             //m.printGameMap();
-            System.out.println("***** GAME STARTS *******");
+            // System.out.println("***** GAME STARTS *******");
 
-            
+            //m.printMineMap();
             if (m.solution())
             {
                 // count winning rate
                 count_win += 1;
+            }
+            else
+            {
+                return;
             }
             
             //boolean flag = m.openSquare(3, 8);
