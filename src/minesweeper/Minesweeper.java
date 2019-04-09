@@ -268,9 +268,12 @@ public class Minesweeper {
     }
     
     public void printMineMap() {
+        if (!debug)
+        {
     	    System.out.println("MINE MAP");
     		printMap(mineMap);
     		System.out.println();
+        }
     }
     
     public void printMap(int[][] mineMap) {
@@ -434,8 +437,18 @@ public class Minesweeper {
     /* Based on the tagMine, try to solve the array by checking potential mine only */
     public void reduceMine()
     {
-        for (int k=0;k<10;k++)
+        int k = 0;
+        boolean noImprovement = false;
+        //while(!noImprovement)
+        for (k=0;k<50;k++)
         {
+            if (noImprovement)
+            {
+                System.out.println("No improvement observed, end game @ round "+k);
+                break;
+            }
+            //k++;
+            int unsolvedMineStart = getUnsolvedMine();
             for (int i=0;i<mineMap.length;i++) //y
             {
                 for (int j=0;j<mineMap.length;j++) //x
@@ -443,32 +456,31 @@ public class Minesweeper {
                     // Just check at each single cell, if potential bomb only evaluate
                     if (gameMap[i][j] == -1)
                     {
-                        // get the position of the square
-                        int newMineX = i;
-                        int newMineY = j;
-                        System.out.println("K:"+k+" i:"+i+" j:"+j);
+                        if (!debug)
+                        {
+                            System.out.println("K:"+k+" i:"+i+" j:"+j);
+                        }
                         printGameMap();
                         checkOnMine(j,i);
-                        //gameMap[i][j] = 9;
+
                         // start of boundary checking
-                        if (newMineX < 0 || newMineY < 0)
+                        if (i < 0 || j < 0)
                             break;
-                        if (newMineX >= gameMap.length || newMineY >= gameMap.length)
+                        if (i >= gameMap.length || j >= gameMap.length)
                             break;
                         // end of boundary checking
                     }
                 }
             }
+            
+            // if no improvement, break the game
+            if (unsolvedMineStart == getUnsolvedMine())
+                noImprovement = true;
         }
     }
 
-    public int checkOnMine(int x, int y)
+    public void checkOnMine(int x, int y)
     {
-        //check the surrounding of the spot
-        //  0  0  0  0
-        //  0  1  0  0
-        //  0  0 -1  0
-        //  0  0  0  0
         // check from the top left to top right, then loop for all until -1 set to 9 or loop end
         for (int a=y-1;a<=y+1;a++)
         {
@@ -483,43 +495,50 @@ public class Minesweeper {
                 {
                     int bombAction = checkOpenMine(a,b);
                     int unSureMine = checkNegMine(a,b);
-                    System.out.println("a:"+a+" b:"+b+" bomb:"+bombCount + " Mine: "+bombAction + " UnsureMine:" +unSureMine);
+                    if (!debug)
+                    {
+                        System.out.println("a:"+a+" b:"+b+" bomb:"+bombCount + " Mine: "+bombAction + " UnsureMine:" +unSureMine);
+                    }
 
                     if((bombCount-bombAction)==0 && unSureMine >= 0)
                     {
                         // Confirm not bomb, open mine
                         if (!openSquare(y,x,gameMap))
                         {
-                            System.out.println("Fail");
-                            return 0;
+                            System.out.println("Fail to open during game");
+                            return;
                         }
                         else
                         {
-                            System.out.println("Successfuly open up right");
+                            if(!debug)
+                            {
+                                System.out.println("Successfuly open up right");
+                            }
                         }
                         printGameMap();
                     }
                     else if(unSureMine == (bombCount-bombAction))
                     {
                         // Confirm is bomb, tag as bomb
-                        System.out.println("Set mine @ "+y+" "+x);
-                        System.out.println("XXX a:"+a+" b:"+b+" bomb:"+bombCount + " Mine: "+bombAction + " UnsureMine:" +unSureMine);
+                        if (!debug)
+                        {
+                            System.out.println("Set mine @ "+y+" "+x);
+                            System.out.println("XXX a:"+a+" b:"+b+" bomb:"+bombCount + " Mine: "+bombAction + " UnsureMine:" +unSureMine);
+                        }
                         gameMap[y][x] = MINE;
                         printGameMap();
                     }
                     else
                     {
-                        System.out.println("Do nothing - cant determine");
-                        // can't determine, do nothing
+                        // can't determine, do nothing and wait for next loop
+                        if (!debug)
+                        {
+                            System.out.println("Do nothing - cant determine");
+                        }
                     }
-                }
-                else
-                {
-                    return 0;
                 }
             }
         }
-        return 0;
     }
     
     public int checkNegMine(int x, int y)
@@ -531,12 +550,9 @@ public class Minesweeper {
         {
             for (int j=y-1;j<=y+1;j++)
             {
-                //if ((j != x) && (i!=y)) //exclude counting urself
+                if (gameMap[i][j] == -1)
                 {
-                    if (gameMap[i][j] == -1)
-                    {
-                        count += 1;
-                    }
+                    count += 1;
                 }
             }
         }
@@ -551,53 +567,13 @@ public class Minesweeper {
         {
             for (int j=y-1;j<=y+1;j++)
             {
-                //if ((j != x) && (i!=y)) //exclude counting urself
+                if (gameMap[i][j] == MINE)
                 {
-                    if (gameMap[i][j] == MINE)
-                    {
-                        count += 1;
-                    }
+                    count += 1;
                 }
             }
         }
         return count;
-    }
-        
-    // recursively checking bomb
-    public void checkPotentialMine(int x, int y)
-    {
-        int count = checkOpenMine(x,y);
-        int bombCount = getSurroundBombInfo(x,y);
-        // if the middle is bomb, shift to next item on right to compare
-   
-        if (bombCount == MINE)
-        {
-            checkPotentialMine(x,y+1);
-        }
-        else if(bombCount != -1)
-        {
-            // if bomb ady found in square, just open it
-            if (count >= bombCount)
-            {
-                if (!openSquare(x,y,gameMap))
-                {
-                    System.out.println("Fail");
-                    return;
-                }
-                else
-                {
-                    System.out.println("Not a bomb @ "+x+" "+y);
-                }
-            }
-            else
-            {
-                System.out.println("set Mine @ " +x + " "+y);
-                gameMap[x][y] = MINE;
-                count += 1;
-                printGameMap();
-            }
-            //return;
-        }
     }
 
     /* Get the value of the gameMap*/
@@ -643,24 +619,29 @@ public class Minesweeper {
 
     		if (mineList.contains(mine)) {
     			mineList.remove(mine);
-    			System.out.println("CORRECT ANSWER!");
-    			System.out.println("Number of mines: " + mineList.size());
+                        if (!debug)
+                        {
+                            System.out.println("CORRECT ANSWER!");
+                            System.out.println("Number of mines: " + mineList.size());
+                        }
     			return true;
     		} else {
-    			System.out.println("WRONG ANSWER! @ " +j + " "+i);
+    			if (!debug)
+                            System.out.println("WRONG ANSWER! @ " +j + " "+i);
     			return false;
     		}
     	
     }
     
     public static void main(String[] args){
-    	debug = false;
+        
+    	debug = false;  //set false to see debug msg, set true to skip debug msg
         int count_win = 0;
-        int MAX_ROUND = 100;
+        int MAX_ROUND = 1;
         for (int j=0;j<MAX_ROUND;j++)
         {
             //Generate a new map
-            Minesweeper m = new Minesweeper(9, 9, 0.3, "minemap.txt");
+            Minesweeper m = new Minesweeper(20, 20, 0.1, "minemap.txt");
 
             //For testing, you may want to generate the map once, and save & load it again later 
             //Minesweeper m = new Minesweeper("minemap.txt");
