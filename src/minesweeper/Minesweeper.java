@@ -59,9 +59,12 @@ public class Minesweeper {
 	private TreeSet<String> mineList;
 	
 	private static boolean debug = false;
-
-	
-	
+        private static boolean printCoor = false;
+        
+        private static int unsolvedMineStart=0;
+        private int[] x_coor;
+	private int[] y_coor;
+ 	
 	/**
 	 * Create a new minemap and save the minemap to a file
 	 * @param m
@@ -445,10 +448,25 @@ public class Minesweeper {
             if (noImprovement)
             {
                 System.out.println("No improvement observed, end game @ round "+k);
+                printCoor = true;
+                getUnsolvedMine();
+                Random rand = new Random();
+                int index = rand.nextInt(unsolvedMineStart);
+                System.out.println("Poke index "+index+"@ i"+x_coor[index]+" j:"+y_coor[index]);
+                //if(!openSquare(x_coor[index],y_coor[index],gameMap))
+                if(!openSquare(3,11,gameMap))
+                    return; //force exit
+
+                reduceMine();
+                break;
+            }
+            else if(getUnsolvedMine()==0)
+            {
+                // brute force, end game
                 break;
             }
             //k++;
-            int unsolvedMineStart = getUnsolvedMine();
+            unsolvedMineStart = getUnsolvedMine();
             for (int i=0;i<mineMap.length;i++) //y
             {
                 for (int j=0;j<mineMap.length;j++) //x
@@ -586,18 +604,26 @@ public class Minesweeper {
     public int getUnsolvedMine()
     {
         int count = 0;
-        
+        x_coor = new int[unsolvedMineStart];
+        y_coor = new int[unsolvedMineStart];
         for(int i=0;i<gameMap.length;i++)
         {
             for (int j=0;j<gameMap.length;j++)
             {
                 if (gameMap[i][j] == -1)
                 {
+                    if (printCoor)
+                    {
+                        System.out.println("Unsolved: i:"+i+" j:"+j);
+                        x_coor[count]=i;
+                        y_coor[count]=j;
+                    }
                     count += 1;
                 }
             }
         }
-
+        //reset the flag
+        printCoor = false;
         return count;
     }
 
@@ -641,10 +667,10 @@ public class Minesweeper {
         for (int j=0;j<MAX_ROUND;j++)
         {
             //Generate a new map
-            Minesweeper m = new Minesweeper(20, 20, 0.1, "minemap.txt");
+            //Minesweeper m = new Minesweeper(20, 20, 0.2, "minemap.txt");
 
             //For testing, you may want to generate the map once, and save & load it again later 
-            //Minesweeper m = new Minesweeper("minemap.txt");
+            Minesweeper m = new Minesweeper("minemap.txt");
             //m.printGameMap();
             // System.out.println("***** GAME STARTS *******");
 
