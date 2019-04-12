@@ -456,7 +456,7 @@ public class Minesweeper {
                     System.out.println("Fail to open during game");
                     return;
                 }
-
+                // noImprovement = false;
                 /* Recursively checking on CLOSE target again */
                 reduceMine();
                 break;
@@ -494,8 +494,10 @@ public class Minesweeper {
             for (int b=y-1;b<=y+1;b++)
             {
                 int bombCount = getSurroundBombInfo(a,b);
-
-                if (gameMap[x][y] != MINE && gameMap[x][y] == CLOSE)
+                
+                if (bombCount != MINE && bombCount != CLOSE)
+                {
+                    if (gameMap[x][y] != MINE && gameMap[x][y] == CLOSE)
                 {
                     /* Check on surrounding info of target cell */
                     checkCellSurroundingInfo(a,b);
@@ -541,6 +543,7 @@ public class Minesweeper {
                             System.out.println("Do nothing - cant determine");
                         }
                     }
+                }
                 }
             }
         }
@@ -670,7 +673,7 @@ public class Minesweeper {
         noDebugMsg = true;  //set false to see debug msg, set true to skip debug msg
         int max_arraySize = 30;
         int count_win = 0;
-        int MAX_ROUND = 1000;
+        int MAX_ROUND = 100;
 
         //while(max_arraySize>4)
         
@@ -679,7 +682,7 @@ public class Minesweeper {
             for (int j=0;j<MAX_ROUND;j++)
             {
                 //Generate a new map
-                Minesweeper m = new Minesweeper(15, 15, 0.25, "minemap.txt");
+                Minesweeper m = new Minesweeper(12, 12, 0.25, "minemap.txt");
 
                 //For testing, you may want to generate the map once, and save & load it again later 
                 //Minesweeper m = new Minesweeper("minemap.txt");
