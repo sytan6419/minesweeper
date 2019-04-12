@@ -9,6 +9,8 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Random;
+import java.util.ArrayList;
+import java.awt.geom.Point2D;
 
 /******************************************************************************
  *  Compilation:  javac Minesweeper.java
@@ -59,12 +61,10 @@ public class Minesweeper {
 	private TreeSet<String> mineList;
 	
 	private static boolean noDebugMsg = false;
-        private static boolean printCoor = false;
-        
-        private static int unsolvedMineStart=0;
-        private int[] x_coor;
-	private int[] y_coor;
+        private static int bombAction;
+        private static int unSureMine;
  	
+        private static ArrayList<Point2D> unsolvedMineCoor = new ArrayList<Point2D>();
 	/**
 	 * Create a new minemap and save the minemap to a file
 	 * @param m
@@ -193,11 +193,6 @@ public class Minesweeper {
     		}
     	}
     	
-    	//uncomments for printout and verify
-    //printMap(gameMap);
-    	
-
-    	
     	return gameMap;
     }
     
@@ -229,7 +224,8 @@ public class Minesweeper {
     			return true;
     		} else{
     			//you open up a mine!!!
-                        System.out.println("Open mine - lose");
+                        if(!noDebugMsg)
+                            System.out.println("Open mine - lose");
     			return false;	
     		}
     	} else{
@@ -373,20 +369,25 @@ public class Minesweeper {
     {
         //logic start at here
         System.out.println("**** GAME @ "+ count +" START AT HERE! ***");
+        printGameMap();
+        System.out.println("***************************************");
+        /* Run over each cell to see any unsolved mine */
+        getUnsolvedMine();
         reduceMine();
-        //System.out.println("****** FINAL SOLUTION *******");
-        //printGameMap();
+        System.out.println("****** FINAL SOLUTION *******");
+        printGameMap();
         
+        /* If all mine solved only consider end game */
         if (getResult() && getMineLeft()==0)
         {
-            System.out.println("You win!");
+            //System.out.println("You win!");
             printMineMap();
             printGameMap();
             return true;
         }
         else
         {
-            System.out.println("You lose!");
+            //System.out.println("You lose!");
             //debug purpose only;
             printMineMap();
             printGameMap();
@@ -424,75 +425,80 @@ public class Minesweeper {
     public void reduceMine()
     {
         int k = 0;
+        int prevUnflagMine = 0;
         boolean noImprovement = false;
         //while(!noImprovement)
         for (k=0;k<50;k++)
         {
+            prevUnflagMine = unsolvedMineCoor.size();
+
+            /* If no imporvement seen, try random poke */
             if (noImprovement)
             {
-                System.out.println("No improvement observed, end game @ round "+k);
-                printCoor = true;
-                getUnsolvedMine();  //update on unopen flag to start guessing
-
-                Random rand = new Random();
-                int index = rand.nextInt(unsolvedMineStart);
-                //int index = 0;
-                System.out.println("Poke index "+index+" @ i"+x_coor[index]+" j:"+y_coor[index]);
-
-                // start guessing on random unopen
-                if(!openSquare(x_coor[index],y_coor[index],gameMap))
+                if (!noDebugMsg)
                 {
-                    System.out.println("Guess wrong...Exit");
-                    return; //force exit
+                    System.out.println("No improvement observed, end game @ round "+k);
                 }
 
+                Random rand = new Random();
+                int index = rand.nextInt(unsolvedMineCoor.size());
+                //int index = 0;
+                //if (!noDebugMsg)
+                {
+                    System.out.println("Want to poke");
+                    printGameMap();
+                    System.out.println("Poke index "+index+" @ x"+(int)unsolvedMineCoor.get(index).getX()+" y:"+(int)unsolvedMineCoor.get(index).getY());
+                }
+                // start guessing on random unopen
+                //if(!openSquare(x_coor[index],y_coor[index],gameMap))
+                if(!OpenUnflagMine((int)unsolvedMineCoor.get(index).getX(),(int)unsolvedMineCoor.get(index).getY()))
+                {
+                    System.out.println("Fail to open during game");
+                    return;
+                }
+
+                /* Recursively checking on CLOSE target again */
                 reduceMine();
                 break;
             }
-            else if(getUnsolvedMine()==0)
+            
+            if(unsolvedMineCoor.size() == 0)
             {
-                // b, end game
+                // if all CLOSE solved, exit from game
                 break;
             }
+            
 
-            unsolvedMineStart = getUnsolvedMine();
-
-            for (int i=0;i<mineMap.length;i++) //y
+            for (int kk=0; kk<unsolvedMineCoor.size();kk++)
             {
-                for (int j=0;j<mineMap.length;j++) //x
-                {
-                    // Just check at each single cell, if potential bomb only evaluate
-                    if (gameMap[i][j] == -1)
-                    {
-                        if (!noDebugMsg)
-                        {
-                            System.out.println("K:"+k+" i:"+i+" j:"+j);
-                        }
-                        printGameMap();
-                        checkOnMine(j,i);
-                    }
-                }
+                // Just check at each single cell, if potential bomb only evaluate
+                //printGameMap();
+                int _x = (int)unsolvedMineCoor.get(kk).getX();
+                int _y = (int)unsolvedMineCoor.get(kk).getY();
+                //System.out.println("KK:" + kk + "Checking on x: "+ _x+ " y: " + _y +" CLOSE: "+unsolvedMineCoor.size());
+                checkOnMine(_x,_y);
             }
             
-            // if no improvement, break the game
-            if (unsolvedMineStart == getUnsolvedMine())
+            //if no improvement, try random poke
+            if (prevUnflagMine == unsolvedMineCoor.size())
                 noImprovement = true;
         }
     }
 
+    /* Start checking from top left handside, then move surrounding the target cell */
     public void checkOnMine(int x, int y)
     {
         // check from the top left to top right, then loop for all until -1 set to 9 or loop end
-        for (int a=y-1;a<=y+1;a++)
+        for (int a=x-1;a<=x+1;a++)
         {
-            for (int b=x-1;b<=x+1;b++)
+            for (int b=y-1;b<=y+1;b++)
             {
                 int bombCount = getSurroundBombInfo(a,b);
 
-                if (gameMap[y][x] != MINE && gameMap[y][x] == -1)
+                if (gameMap[x][y] != MINE && gameMap[x][y] == CLOSE)
                 {
-                    int bombAction = checkOpenMine(a,b);
-                    int unSureMine = checkNegMine(a,b);
+                    /* Check on surrounding info of target cell */
+                    checkCellSurroundingInfo(a,b);
                     if (!noDebugMsg)
                     {
                         System.out.println("a:"+a+" b:"+b+" bomb:"+bombCount + " Mine: "+bombAction + " UnsureMine:" +unSureMine);
@@ -501,7 +507,8 @@ public class Minesweeper {
                     if((bombCount-bombAction)==0 && unSureMine >= 0)
                     {
                         // Confirm not bomb, open mine
-                        if (!openSquare(y,x,gameMap))
+                        //if (!openSquare(y,x,gameMap))
+                        if(!OpenUnflagMine(x,y))
                         {
                             System.out.println("Fail to open during game");
                             return;
@@ -523,7 +530,7 @@ public class Minesweeper {
                             System.out.println("Set mine @ "+y+" "+x);
                             System.out.println("a:"+a+" b:"+b+" bomb:"+bombCount + " Mine: "+bombAction + " UnsureMine:" +unSureMine);
                         }
-                        gameMap[y][x] = MINE;
+                        TagUnflagMine(x,y);
                         printGameMap();
                     }
                     else
@@ -539,42 +546,68 @@ public class Minesweeper {
         }
     }
     
-    /* Check on surrounding unopen flag of target */
-    public int checkNegMine(int x, int y)
+    /* Gather the surrouding information of target cell: 1) bomb 2) unflag mine*/
+    public void checkCellSurroundingInfo(int x, int y)
     {
-        int count = 0;
-
-        // check surrounding see if any bomb found
-        for (int i=x-1;i<=x+1;i++)
-        {
-            for (int j=y-1;j<=y+1;j++)
-            {
-                if (gameMap[i][j] == -1)
-                {
-                    count += 1;
-                }
-            }
-        }
-        return count;  
-    }
-
-    /* Check on surrounding open mine of target */
-    public int checkOpenMine(int x, int y)
-    {
-        int count = 0;
-
-        // check surrounding see if any bomb found
+        int countMine = 0;
+        int countFlag = 0;
+ 
         for (int i=x-1;i<=x+1;i++)
         {
             for (int j=y-1;j<=y+1;j++)
             {
                 if (gameMap[i][j] == MINE)
                 {
-                    count += 1;
+                    countMine += 1;
+                }
+                if (gameMap[i][j] == CLOSE)
+                {
+                    countFlag += 1;
                 }
             }
         }
-        return count;
+ 
+        // Update static variables for the counting event
+        unSureMine = countFlag;
+        bombAction = countMine;
+    }
+
+    /* Wrapper function to openSquare, it removes the flag from arraylist as well */
+    public boolean OpenUnflagMine(int x, int y)
+    {
+        if (!openSquare(x,y,gameMap))
+        {
+            System.out.println("Fail to open during game");
+            return false;
+        }
+        else
+        {
+            Point2D match_point = new Point2D.Double(x,y);
+            for (int i=0;i<unsolvedMineCoor.size();i++)
+            {
+                if (match_point.equals(unsolvedMineCoor.get(i)))
+                {
+                    unsolvedMineCoor.remove(i);
+                    return true;
+                }
+            }
+            /* item not found */
+            return false;
+        }
+    }
+
+    /* Wrapper function to tag mine and update on the array list */
+    public void TagUnflagMine(int x, int y)
+    {
+        Point2D match_point = new Point2D.Double(x,y);
+        for (int i=0;i<unsolvedMineCoor.size();i++)
+        {
+            if (match_point.equals(unsolvedMineCoor.get(i)))
+            {
+                gameMap[x][y] = MINE;
+                unsolvedMineCoor.remove(i);
+            }
+        }
     }
 
     /* Get the surround bomb info from target */
@@ -583,31 +616,21 @@ public class Minesweeper {
         return gameMap[x][y];
     }
 
-    /* return current unsolved mine flag from the whole game map */
-    public int getUnsolvedMine()
+    /* Get current unsolved mine flag from the whole game map and populate the arraylist */
+    public void getUnsolvedMine()
     {
-        int count = 0;
-        x_coor = new int[unsolvedMineStart];
-        y_coor = new int[unsolvedMineStart];
         for(int i=0;i<gameMap.length;i++)
         {
             for (int j=0;j<gameMap.length;j++)
             {
-                if (gameMap[i][j] == -1)
+                if (gameMap[i][j] == CLOSE)
                 {
-                    if (printCoor)
-                    {
-                        //System.out.println("Unsolved: i:"+i+" j:"+j);
-                        x_coor[count]=i;
-                        y_coor[count]=j;
-                    }
-                    count += 1;
+                    Point2D point_add = new Point2D.Double(i,j);
+                    unsolvedMineCoor.add(point_add);
+                    //System.out.println(unsolvedMineCoor.get(unsolvedMineCoor.size()-1).getX()+" "+unsolvedMineCoor.get(unsolvedMineCoor.size()-1).getY());
                 }
             }
         }
-        //reset the flag
-        printCoor = false;
-        return count;
     }
 
     /* return current minelist size */
@@ -644,38 +667,49 @@ public class Minesweeper {
     
     public static void main(String[] args){
         
-        noDebugMsg = false;  //set false to see debug msg, set true to skip debug msg
+        noDebugMsg = true;  //set false to see debug msg, set true to skip debug msg
+        int max_arraySize = 30;
         int count_win = 0;
-        int MAX_ROUND = 1;
+        int MAX_ROUND = 1000;
 
-        for (int j=0;j<MAX_ROUND;j++)
+        //while(max_arraySize>4)
+        
         {
-            //Generate a new map
-            Minesweeper m = new Minesweeper(15, 15, 0.25, "minemap.txt");
-
-            //For testing, you may want to generate the map once, and save & load it again later 
-            //Minesweeper m = new Minesweeper("minemap.txt");
-            //m.printGameMap();
-
-            /* Randomly open 1 box */
-            Random rand = new Random();
-            /* If open up correctly at first, only continue */
-            if (m.openSquare(rand.nextInt(m.gameMap.length), rand.nextInt(m.gameMap.length), m.gameMap))
+            count_win = 0;
+            for (int j=0;j<MAX_ROUND;j++)
             {
-                if (m.solution(j))
+                //Generate a new map
+                Minesweeper m = new Minesweeper(15, 15, 0.25, "minemap.txt");
+
+                //For testing, you may want to generate the map once, and save & load it again later 
+                //Minesweeper m = new Minesweeper("minemap.txt");
+                //m.printGameMap();
+
+                /* Randomly open 1 box */
+                Random rand = new Random();
+                /* If open up correctly at first, only continue */
+                if (m.openSquare(rand.nextInt(m.gameMap.length), rand.nextInt(m.gameMap.length), m.gameMap))
                 {
-                    // count winning rate
-                    count_win += 1;
+                    if (m.solution(j))
+                    {
+                        // count winning rate
+                        count_win += 1;
+                    }
                 }
-            }
-            else
-            {
-                /* If open game at first round, ignore it and recount */
-                System.out.println("Open bomb at begin, restart");
-                j--;
-            }
+                else
+                {
+                    /* If open game at first round, ignore it and recount */
+                    //System.out.println("Open bomb at begin, restart");
+                    j--;
+                }
 
+            }
+            System.out.println("ArraySize: "+max_arraySize+ " win: " +count_win + " out of " + MAX_ROUND);
+            max_arraySize--;
         }
-        System.out.println(count_win + " out of " + MAX_ROUND);
+        //int sum = 0; 
+        //for (int i : avgK)
+        //    sum = sum + i;
+        //System.out.println(sum/avgK.size());
     }
 }
